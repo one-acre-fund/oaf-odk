@@ -1,6 +1,8 @@
-# General
+# Container-specific settings
 
+# ODK Central API
 central:
+  # This container can NOT be scaled, as it persists files into local disk...
   image:
     name: oneacrefund/odk_service
     tag: latest
@@ -8,20 +10,24 @@ central:
   # Run init container to set up users?
   # WARNING: the password will be set on first run but then will NOT be updated in case it is chagned here
   init: false
+  # Override these...
   adminUser: me@example.com
   adminPassword: y3EWZBmY9d
 
+# ODK Central Web UI
 web:
   replicas: 2
   image:
     name: oneacrefund/odk_nginx
     tag: latest
 
+# Enketo, the web-based form submission UI
 enketo:
   replicas: 2
   image:
     name: enketo/enketo-express
     tag: '2.5.2'
+  # Override these...
   apiKey: 9geTJ5sc7EdNd9wf6Hq2
   lessApiKey: pEzUKC524B
   encryptionKey: 3zxvaqG7EDzpgRVMwMdB
@@ -38,16 +44,19 @@ ingress:
 
 smtp:
   host: smtp.gmail.com
-  tls: true
+  tls: false
   port: 587
   user: 
   password: 
 
 global:
+  # This will apply to this and all subcharts
+  storageClass: standard
+  # These will apply to both redis subcharts
   redis:
     password: brFdS9b7Xp
-  storageClass: standard
 
+# Redis is used twice by Enketo. Default settings should work
 rediscache:
   enabled: true
   usePassword: true
@@ -64,6 +73,7 @@ redismain:
     enabled: false
     slaveCount: 1
 
+# Postgres is used by ODK Central
 postgresql:
   enabled: true
   dbName: odk
@@ -74,8 +84,10 @@ postgresql:
   # See https://artifacthub.io/packages/helm/bitnami/postgresql for docs
   postgresqlPostgresPassword: admin
 
-  # WARNING: apparently the migration files require the user to be superuser... so it seems we have to use postgres user/pwd here...
+  # WARNING: apparently the migration files require the ODK user to be superuser...
+  # so it seems we have to use the postgres user/pwd here...
   postgresqlUsername: postgres
   postgresqlPassword: admin
 
+  # This configmap will be created as a sql script and run to intialize the db
   initdbScriptsConfigMap: odk-postgres-init

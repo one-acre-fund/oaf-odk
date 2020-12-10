@@ -1,4 +1,3 @@
-# Load-balancer for SGW
 kind: Service
 apiVersion: v1
 metadata:
