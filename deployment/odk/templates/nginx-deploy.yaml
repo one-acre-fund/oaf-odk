@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-odk-web
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.web.replicas }}
+  selector:
+    matchLabels:
+      org.getodk.web.instance: {{ .Release.Name }}-odk-web
+  template:
+    metadata:
+      labels:
+        org.getodk.web.instance: {{ .Release.Name }}-odk-web
+    spec:
+      containers:
+      - name: web
+        image: "{{ .Values.web.image.name }}:{{ .Values.web.image.tag }}"
+        command:
+        - sh
+        - -c
+        - /scripts/entrypoint.sh
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+        env:
+        - name: DOMAIN
+          value: {{ .Values.general.externalDomain | quote }}
+        - name: SSL_TYPE
+          value: selfsign
+        - name: SYSADMIN_EMAIL
+          value: {{ .Values.general.supportEmail | quote }}
+        volumeMounts:
+        - name: config
+          mountPath: /etc/nginx/conf.d
+
+      volumes:
+      - name: config
+        configMap:
+          name: {{ .Release.Name }}-nginx

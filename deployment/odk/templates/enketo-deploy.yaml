@@ -1,0 +1,72 @@
+# Sync gateway pod
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-enketo
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.enketo.replicas }}
+  selector:
+    matchLabels:
+      org.getodk.instance: {{ .Release.Name }}-enketo
+  template:
+    metadata:
+      annotations:
+        # Add a checksum to force the re-creation of the pods on every config update
+        checksum/config: {{ include "conf_enketo" . | sha256sum }}
+      labels:
+        org.getodk.instance: {{ .Release.Name }}-enketo
+    spec:
+      initContainers:
+      # Cannot use a read-only configmap, so we copy it to a RW folder
+      - name: copy-config
+        image: busybox
+        command:
+        - sh
+        - -c
+        - |
+          cp /config-init/config.json /srv/src/enketo_express/config/
+        volumeMounts:
+        - name: enketo-config
+          mountPath: /config-init/config.json
+          subPath: config.json
+          readOnly: true
+        - name: cache-volume
+          subPath: config
+          mountPath: /srv/src/enketo_express/config
+
+      containers:
+      # All containers need to be in the same pod since they share some volumes
+      - name: enketo
+        image: "{{ .Values.enketo.image.name }}:{{ .Values.enketo.image.tag }}"
+        # command:
+        # - sh
+        # - -c
+        # - pm2 start --no-daemon app.js -n enketo
+        # - cat
+        # tty: true
+        ports:
+        - containerPort: 8005
+        volumeMounts:
+        - name: cache-volume
+          subPath: config/config.json
+          mountPath: /srv/src/enketo_express/config/config.json
+        - name: cache-volume
+          subPath: checksum
+          mountPath: /srv/src/enketo_express/checksum
+        - name: cache-volume
+          subPath: build/css
+          mountPath: /srv/src/enketo_express/public/css
+        - name: cache-volume
+          subPath: build/js
+          mountPath: /srv/src/enketo_express/public/js/build
+        - name: cache-volume
+          subPath: build/locales
+          mountPath: /srv/src/enketo_express/locales/build
+
+      volumes:
+      - name: enketo-config
+        secret:
+          secretName: {{ .Release.Name }}-odk-enketo
+      - name: cache-volume
+        emptyDir: {}

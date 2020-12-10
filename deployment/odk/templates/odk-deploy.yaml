@@ -1,0 +1,85 @@
+# Sync gateway pod
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-odk
+  namespace: {{ .Release.Namespace }}
+spec:
+  # This pod can NOT be scaled, because it persists local files
+  replicas: 1
+  selector:
+    matchLabels:
+      org.getodk.instance: {{ .Release.Name }}-odk
+  template:
+    metadata:
+      annotations:
+        # Add a checksum to force the re-creation of the pods on every config update
+        checksum/config: {{ include "conf_odk" . | sha256sum }}
+      labels:
+        org.getodk.instance: {{ .Release.Name }}-odk
+    spec:
+      initContainers:
+      # TODO: check that db is initialized?
+      - name: wait-db
+        image: jwilder/dockerize
+        command:
+        - sh
+        - -c
+        - dockerize -timeout=40s -wait 'tcp://{{ include "postgresHost" . }}:{{ .Values.postgresql.port }}'
+
+      # Run migrations and create users
+      {{- if .Values.central.init }}
+      - name: init
+        image: "{{ .Values.central.image.name }}:{{ .Values.central.image.tag }}"
+        command:
+        - sh
+        - -c
+        - |
+          echo Running migrations
+          node -e 'const { withDatabase, migrate } = require("./lib/model/database"); withDatabase(require("config").get("default.database"))(migrate);'
+
+          echo Creating admin account
+          odk-cmd --email "{{ .Values.central.adminUser }}" --password "$ADMIN_PASSWORD" user-create || true
+          odk-cmd --email "{{ .Values.central.adminUser }}" user-promote || true
+        env:
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: "{{ .Release.Name }}-central-admin"
+              key: password
+        volumeMounts:
+        - name: odk-config
+          mountPath: /usr/odk/config
+      {{- end }}
+
+      containers:
+      # All containers need to be in the same pod since they share some volumes
+      - name: central
+        image: "{{ .Values.central.image.name }}:{{ .Values.central.image.tag }}"
+        command:
+        - sh
+        - -c
+        - ./start-odk.sh
+        # - cat
+        # tty: true
+        ports:
+        - containerPort: 8383
+        volumeMounts:
+        - name: odk-config
+          mountPath: /usr/odk/config
+        - name: persistence
+          mountPath: /data/transfer
+          subPath: central
+
+      - name: pyxform
+        image: 'getodk/pyxform-http:v1.0.0'
+        ports:
+        - containerPort: 80
+
+      volumes:
+      - name: persistence
+        persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-odk
+      - name: odk-config
+        secret:
+          secretName: {{ .Release.Name }}-odk-central

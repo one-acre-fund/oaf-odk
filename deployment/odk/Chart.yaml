@@ -1,0 +1,22 @@
+apiVersion: v2
+name: odk
+version: 0.1.0
+description: Helm Chart for ODK Central
+home: https://github.com/one-acre-fund/oaf-odk
+sources:
+  - https://github.com/one-acre-fund/oaf-odk
+dependencies:
+  - name: postgresql
+    version: ~10.1.2
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: redis
+    version: ~10.7.4
+    repository: https://charts.bitnami.com/bitnami
+    condition: redismain.enabled
+    alias: redismain
+  - name: redis
+    version: ~10.7.4
+    repository: https://charts.bitnami.com/bitnami
+    condition: rediscache.enabled
+    alias: rediscache

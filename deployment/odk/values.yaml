@@ -1,0 +1,81 @@
+# General
+
+central:
+  image:
+    name: oneacrefund/odk_service
+    tag: latest
+  
+  # Run init container to set up users?
+  # WARNING: the password will be set on first run but then will NOT be updated in case it is chagned here
+  init: false
+  adminUser: me@example.com
+  adminPassword: y3EWZBmY9d
+
+web:
+  replicas: 2
+  image:
+    name: oneacrefund/odk_nginx
+    tag: latest
+
+enketo:
+  replicas: 2
+  image:
+    name: enketo/enketo-express
+    tag: '2.5.2'
+  apiKey: 9geTJ5sc7EdNd9wf6Hq2
+  lessApiKey: pEzUKC524B
+  encryptionKey: 3zxvaqG7EDzpgRVMwMdB
+
+general:
+  externalDomain: example.com
+  externalScheme: https
+  supportEmail: support@example.com
+  storageSize: 10Gi
+
+serviceType: ClusterIP
+ingress:
+  enabled: false
+
+smtp:
+  host: smtp.gmail.com
+  tls: true
+  port: 587
+  user: 
+  password: 
+
+global:
+  redis:
+    password: brFdS9b7Xp
+  storageClass: standard
+
+rediscache:
+  enabled: true
+  usePassword: true
+  cluster:
+    # disable slaves
+    enabled: false
+    slaveCount: 1
+
+redismain:
+  enabled: true
+  usePassword: true
+  cluster:
+    # disable slaves
+    enabled: false
+    slaveCount: 1
+
+postgresql:
+  enabled: true
+  dbName: odk
+  port: 5432
+  # TODO: support external db?
+
+  # Standard postgres chart values
+  # See https://artifacthub.io/packages/helm/bitnami/postgresql for docs
+  postgresqlPostgresPassword: admin
+
+  # WARNING: apparently the migration files require the user to be superuser... so it seems we have to use postgres user/pwd here...
+  postgresqlUsername: postgres
+  postgresqlPassword: admin
+
+  initdbScriptsConfigMap: odk-postgres-init
