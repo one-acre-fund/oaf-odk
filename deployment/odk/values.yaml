@@ -51,7 +51,7 @@ smtp:
 
 global:
   # This will apply to this and all subcharts
-  storageClass: standard
+  storageClass: 
   # These will apply to both redis subcharts
   redis:
     password: brFdS9b7Xp

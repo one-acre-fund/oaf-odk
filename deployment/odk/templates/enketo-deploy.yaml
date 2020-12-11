@@ -65,5 +65,7 @@ spec:
       - name: enketo-config
         secret:
           secretName: {{ .Release.Name }}-odk-enketo
+      # We use an emptyDir to store the build results and configuration.
+      # It will survive container crashes, but not pod terminations, so these will be rebuilt on every pod start
       - name: cache-volume
         emptyDir: {}

@@ -4,8 +4,9 @@ metadata:
   name: {{ .Release.Name }}-nginx
   namespace: {{ .Release.Namespace }}
 data:
+  # TODO: support https at nginx level
+  # in general we'd expect it to be managed at k8s ingress level, so for now we only support http
   nginx.conf: |
-    # We use plain http... encryption will typically be managed at ingress level
     server {
       listen 80;
       client_max_body_size 100m;
