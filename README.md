@@ -67,3 +67,8 @@ helm dependency build deployment/odk
 # Install new release
 helm upgrade --install --values my-values.yaml my-odk deployment/odk
 ```
+
+## Limitations / TODOs
+
+* The nginx setup is currently only listening over http, since in Kubernetes context the TLS setup is generally managed at ingress level. If this doesn't suit your needs, you may need to override the nginx ConfigMap
+* Currently the chart only works with its own Postgres database (installed as subchart). To use an external database you may need to override the chart templates.
